@@ -1,0 +1,98 @@
+"""
+Configuration management for bel-ai-jar
+"""
+import json
+import os
+from pathlib import Path
+from typing import Optional, Dict, Any
+
+
+class Config:
+    """Configuration management class"""
+    
+    DEFAULT_CONFIG = {
+        "total_questions": 3,
+        "passing_grade": 100,
+        "answer_options": 4,
+        "additional_prompt": None,
+        "strict_mode": True,
+        "ai_model": "mistral",
+        "api_key": None,
+        "model_params": {}
+    }
+    
+    def __init__(
+        self,
+        total_questions: int = 3,
+        passing_grade: int = 100,
+        answer_options: int = 4,
+        additional_prompt: Optional[str] = None,
+        strict_mode: bool = True,
+        ai_model: str = "mistral",
+        api_key: Optional[str] = None,
+        model_params: Optional[Dict[str, Any]] = None
+    ):
+        self.total_questions = total_questions
+        self.passing_grade = passing_grade
+        self.answer_options = answer_options
+        self.additional_prompt = additional_prompt
+        self.strict_mode = strict_mode
+        self.ai_model = ai_model
+        self.api_key = api_key
+        self.model_params = model_params or {}
+        self.config_path = self._get_config_path()
+    
+    def _get_config_path(self) -> Path:
+        """Get the configuration file path"""
+        return Path(".bel-ai-jar.json")
+    
+    def save(self) -> None:
+        """Save configuration to file"""
+        config_data = {
+            "total_questions": self.total_questions,
+            "passing_grade": self.passing_grade,
+            "answer_options": self.answer_options,
+            "additional_prompt": self.additional_prompt,
+            "strict_mode": self.strict_mode,
+            "ai_model": self.ai_model,
+            "api_key": self.api_key,
+            "model_params": self.model_params
+        }
+        
+        with open(self.config_path, "w") as f:
+            json.dump(config_data, f, indent=2)
+    
+    def load(self) -> Dict[str, Any]:
+        """Load configuration from file"""
+        if not self.config_path.exists():
+            return self.DEFAULT_CONFIG
+            
+        with open(self.config_path, "r") as f:
+            return json.load(f)
+    
+    def delete_config(self) -> None:
+        """Delete configuration file"""
+        if self.config_path.exists():
+            os.remove(self.config_path)
+    
+    @classmethod
+    def from_file(cls) -> "Config":
+        """Create Config instance from existing file"""
+        config = cls()
+        file_config = config.load()
+        
+        return cls(
+            total_questions=file_config.get("total_questions", 3),
+            passing_grade=file_config.get("passing_grade", 100),
+            answer_options=file_config.get("answer_options", 4),
+            additional_prompt=file_config.get("additional_prompt"),
+            strict_mode=file_config.get("strict_mode", True),
+            ai_model=file_config.get("ai_model", "mistral"),
+            api_key=file_config.get("api_key"),
+            model_params=file_config.get("model_params", {})
+        )
+    
+    def __repr__(self) -> str:
+        return f"Config(total_questions={self.total_questions}, passing_grade={self.passing_grade}, " \
+               f"answer_options={self.answer_options}, strict_mode={self.strict_mode}, " \
+               f"ai_model={self.ai_model})"
