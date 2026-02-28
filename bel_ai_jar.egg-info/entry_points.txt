@@ -1,2 +1,0 @@
-[console_scripts]
-bel-ai-jar = bel_ai_jar.cli:main
