@@ -4,6 +4,7 @@ CLI interface for bel-ai-jar library
 import argparse
 import sys
 from typing import Optional
+from pathlib import Path
 from .config import Config
 from .git_hooks import setup_git_hooks, remove_git_hooks
 
@@ -11,6 +12,27 @@ from .git_hooks import setup_git_hooks, remove_git_hooks
 def init_command():
     """Initialize bel-ai-jar configuration"""
     print("🚀 Initializing bel-ai-jar configuration...")
+    
+    def _update_gitignore(config_path: Path) -> None:
+        """Add config file to .gitignore if not already present"""
+        gitignore_path = Path(".gitignore")
+        config_filename = config_path.name
+        
+        # Create .gitignore if it doesn't exist
+        if not gitignore_path.exists():
+            gitignore_path.write_text(f"{config_filename}\n")
+            return
+        
+        # Read existing .gitignore
+        with open(gitignore_path, "r") as f:
+            gitignore_content = f.read()
+        
+        # Check if config file is already in .gitignore
+        if config_filename not in gitignore_content:
+            # Add config file to .gitignore
+            with open(gitignore_path, "a") as f:
+                f.write(f"\n{config_filename}\n")
+            print(f"📝 Added {config_filename} to .gitignore")
     
     # Get user inputs
     num_questions = input("Number of questions to ask (default 3, min 1, max 10): ") or "3"
@@ -95,6 +117,9 @@ def init_command():
     
     # Save config
     config.save()
+    
+    # Add config file to .gitignore
+    _update_gitignore(config.config_path)
     
     # Setup git hooks
     setup_git_hooks()
