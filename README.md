@@ -48,8 +48,7 @@ flowchart TD
 
 ## Tech Stack
 
-- **Python 3**: Primary programming language.
-- **UV**: Package manager for dependency management.
+- **Python > 3.8**: Primary programming language.
 - **Mistral Vibe**: AI framework used for generating questions and evaluating answers.
 - **Mistral Devstral-2**: AI model used for question generation and evaluation.
 
