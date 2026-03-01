@@ -353,7 +353,7 @@
                 </div>
                 <div class="card reveal">
                     <h3>Multiple AI Models</h3>
-                    <p>Supports Mistral, OpenAI, and local Llama instances</p>
+                    <p>Supports Mistral, other LLM models, and local Llama instances</p>
                 </div>
                 <div class="card reveal">
                     <h3>Strict Mode</h3>
@@ -367,12 +367,14 @@
         </div>
     </section>
 
-    <!-- Slide 7: Technical Architecture -->
+    <!-- Slide 7: Technical Architecture and Tech stack -->
     <section class="slide architecture-slide">
         <div class="slide-content">
             <h2 class="reveal">Technical Architecture</h2>
             <div class="reveal">
-                <pre style="background: rgba(30, 30, 46, 0.5); padding: 1rem; border-radius: 8px; overflow-x: auto;">
+                <div class="content-grid">
+                    <div class="card reveal">
+                        <pre style="background: rgba(30, 30, 46, 0.5); padding: 1rem; border-radius: 8px; overflow-x: auto;">
 ┌───────────────────────────────────────────────────┐
 │                   Developer                       │
 └───────────────────────────────────────────────────┘
@@ -395,7 +397,7 @@
                             ▼
 ┌───────────────────────────────────────────────────┐
 │              AI Question Generation               │
-│              (Mistral/OpenAI/Llama)               │
+│      (Mistral/Other LLM models/Local models)      │
 └───────────────────────────────────────────────────┘
                             │
                             ▼
@@ -406,46 +408,45 @@
                             ├───► Pass → Commit Allowed
                             │
                             └───► Fail → Commit Rejected
-                </pre>
+                        </pre>
+                    </div>
+                    <div class="card reveal">
+                        <h3>Tech Stack</h3>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>• Python 3.8+</li>
+                            <li>• Mistral Vibe (Devstral-2). All code implemented using Mistral Vibe!</li>
+                            <li>• Mistral Devstra-2 for code-change-question generation</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Slide 8: User Flow -->
-    <section class="slide flow-slide">
+    <!-- Slide 8: Demo -->
+    <section class="slide demo-slide">
         <div class="slide-content">
-            <h2 class="reveal">User Flow</h2>
+            <h2 class="reveal">Demo</h2>
             <div class="reveal">
-                <pre style="background: rgba(30, 30, 46, 0.5); padding: 1rem; border-radius: 8px; overflow-x: auto;">
-┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
-│  Install    │       │  Configure  │       │  Code Changes   │
-│  bel-ai-jar │───►   │  Settings   │───►   │  with AI Agent  │
-└─────────────┘       └─────────────┘       └─────────────────┘
-        │                     │                         │
-        ▼                     ▼                         ▼
-┌─────────────┐       ┌─────────────┐       ┌─────────────────┐
-│  Git Hooks  │       │  Question   │       │  Git Commit     │
-│  Installed  │       │  Generation │       │  Triggered      │
-└─────────────┘       └─────────────┘       └─────────────────┘
-        │                     │                         │
-        └─────────────┬───────┘                         │
-                      │                                 │
-                      ▼                                 ▼
-              ┌───────────────────────┐       ┌─────────────────┐
-              │  Pre-Commit Evaluation│◄──────│  Questions      │
-              │  (Quiz Interface)     │       │  Displayed      │
-              └───────────────────────┘       └─────────────────┘
-                            │
-                            ├───► Answers Correct → Commit
-                            │
-                            └───► Answers Wrong → Reject
-                                    │
-                                    ▼
-                            ┌─────────────┐
-                            │  Learn &    │
-                            │  Retry      │
-                            └─────────────┘
-                </pre>
+                <div class="content-grid">
+                    <div class="card reveal">
+                        <p>Demo picture:</p>
+                        <div style="overflow: hidden; border-radius: 8px;">
+                            <img src="bel-ai-jar_demo.png" alt="Demo picture" style="width: 100%; height: auto; display: block;">
+                        </div>
+                    </div>
+                    <div class="card reveal">
+                        <p>Watch the demo video below to see bel-ai-jar in action:</p>
+                        <div style="overflow: hidden; border-radius: 8px;">
+                            <a href="https://youtu.be/vIRlYt2nHvg" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;" target="_blank">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="white" class="bi bi-youtube" viewBox="0 0 16 16">
+                                    <path d="M8.051 1.999h.089c.822.003 4.987.033 6.11.335a2.01 2.01 0 0 1 1.415 1.42c.101.38.172.883.22 1.402l.01.104.022.26.008.104c.065.914.073 1.77.074 1.957v.075c-.001.194-.01 1.108-.082 2.06l-.008.105-.009.104c-.05.572-.124 1.14-.235 1.558a2.01 2.01 0 0 1-1.415 1.42c-1.16.312-5.569.334-6.18.335h-.142c-.309 0-1.587-.006-2.927-.052l-.17-.006-.087-.004-.171-.007-.171-.007c-1.11-.049-2.167-.128-2.654-.26a2.01 2.01 0 0 1-1.415-1.419c-.111-.417-.185-.986-.235-1.558L.09 9.82l-.008-.104A31 31 0 0 1 0 7.68v-.123c.002-.215.01-.958.064-1.778l.007-.103.003-.052.008-.104.022-.26.01-.104c.048-.519.119-1.023.22-1.402a2.01 2.01 0 0 1 1.415-1.42c.487-.13 1.544-.21 2.654-.26l.17-.007.172-.006.086-.003.171-.007A100 100 0 0 1 7.858 2zM6.4 5.209v4.818l4.157-2.408z"/>
+                                </svg>
+                                <span style="margin-left: 0.5rem; color: whitesmoke;" >Watch the demo video here!</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
