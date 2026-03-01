@@ -20,7 +20,7 @@ flowchart TD
     A2 --> A3[Configure total number of question]
     A3 --> A4[Configure number of answer options on each question]
     A4 --> A5[Configure passing grade]
-    A5 --> A6[Configure additional prompt to enhance question generation (default none)]
+    A5 --> A6[Configure additional prompt to enhance question generation]
 ```
 
 ### Evaluation and Git Hooks Flow
