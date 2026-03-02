@@ -2,6 +2,7 @@
 CLI interface for bel-ai-jar library
 """
 import argparse
+import os
 import sys
 from typing import Optional
 from pathlib import Path
@@ -58,18 +59,28 @@ def init_command():
     else:
         ai_model = "mistral"
     
-    # API Key for cloud models
+    # API Key guidance — keys are never stored in the config file
     api_key = None
     if ai_model == "mistral":
-        api_key = input("Enter Mistral API key (or press Enter to use MISTRAL_API_KEY env var): ") or None
+        env_var = "MISTRAL_API_KEY"
+        if not os.environ.get(env_var):
+            print(f"\n🔐 Security notice: API keys are NOT stored in the config file.")
+            print(f"   Set your key as an environment variable:")
+            print(f"   export {env_var}='your-api-key-here'")
+            print(f"   (add this to your shell profile, e.g. ~/.zshrc or ~/.bashrc)\n")
+        else:
+            print(f"✅ {env_var} environment variable detected.")
     elif ai_model.startswith("openai"):
-        api_key = input("Enter OpenAI API key (or press Enter to use OPENAI_API_KEY env var): ") or None
-        
-    if api_key and api_key.strip():
-        # Simple validation
-        if len(api_key.strip()) < 20:
-            print("⚠️  API key seems too short. Make sure it's correct.")
-    elif ai_model == "local-llama":
+        env_var = "OPENAI_API_KEY"
+        if not os.environ.get(env_var):
+            print(f"\n🔐 Security notice: API keys are NOT stored in the config file.")
+            print(f"   Set your key as an environment variable:")
+            print(f"   export {env_var}='your-api-key-here'")
+            print(f"   (add this to your shell profile, e.g. ~/.zshrc or ~/.bashrc)\n")
+        else:
+            print(f"✅ {env_var} environment variable detected.")
+
+    if ai_model == "local-llama":
         llama_url = input("Enter Local Llama API URL (default http://localhost:8080/completion): ") or "http://localhost:8080/completion"
         model_params = {"api_url": llama_url}
     else:
@@ -103,7 +114,7 @@ def init_command():
         print(f"❌ Error: {e}")
         sys.exit(1)
     
-    # Create config
+    # Create config (api_key is never stored — resolved from env vars at runtime)
     config = Config(
         total_questions=num_questions,
         passing_grade=passing_grade if not strict_mode else 100,
@@ -111,7 +122,6 @@ def init_command():
         additional_prompt=additional_prompt if additional_prompt.strip() else None,
         strict_mode=strict_mode,
         ai_model=ai_model,
-        api_key=api_key if api_key and api_key.strip() else None,
         model_params=model_params if ai_model == "local-llama" else None
     )
     

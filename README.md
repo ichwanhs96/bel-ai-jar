@@ -1,6 +1,23 @@
-# bel-ai-jar
+<p align="center">
+  <img src="logo.webp" alt="bel-ai-jar logo" width="160" />
+</p>
 
-Git hooks for understanding AI-generated code changes.
+<h1 align="center">bel-ai-jar</h1>
+
+<p align="center">
+  Git hooks for understanding AI-generated code changes.
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/bel-ai-jar/"><img src="https://img.shields.io/pypi/v/bel-ai-jar?label=PyPI&color=blue" alt="PyPI version"></a>
+  <a href="https://www.npmjs.com/package/bel-ai-jar"><img src="https://img.shields.io/npm/v/bel-ai-jar?label=npm&color=red" alt="npm version"></a>
+  <a href="https://pypi.org/project/bel-ai-jar/"><img src="https://img.shields.io/pypi/pyversions/bel-ai-jar" alt="Python versions"></a>
+  <img src="https://img.shields.io/node/v/bel-ai-jar?label=Node.js" alt="Node.js version">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
+  <a href="https://github.com/ichwanhs96/bel-ai-jar/issues"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg" alt="Contributions welcome"></a>
+</p>
+
+---
 
 ## Problem
 
@@ -48,20 +65,37 @@ flowchart TD
 
 ## Tech Stack
 
-- **Python > 3.8**: Primary programming language.
-- **Mistral Vibe**: AI framework used for generating questions and evaluating answers.
-- **Mistral Devstral-2**: AI model used for question generation and evaluation.
+- **Python ≥ 3.8** / **Node.js ≥ 16**: Supported runtimes.
+- **Mistral / OpenAI / Local Llama**: Pluggable AI backends for question generation.
+
+---
 
 ## Installation
+
+### Python (pip)
 
 ```bash
 pip install bel-ai-jar
 ```
 
+### JavaScript (npm)
+
+```bash
+npm install -g bel-ai-jar
+```
+
+---
+
 ## Usage
 
 ### Initialize Configuration
 
+**Python:**
+```bash
+bel-ai-jar init
+```
+
+**JavaScript:**
 ```bash
 bel-ai-jar init
 ```
@@ -69,7 +103,8 @@ bel-ai-jar init
 This will guide you through setting up:
 - Number of questions to ask (default: 3)
 - Number of answer options per question (default: 4)
-- Strict mode (default: enabled)
+- AI model selection (Mistral, OpenAI GPT-3.5/4, or Local Llama)
+- Strict mode (default: enabled — must answer all questions correctly)
 - Passing grade (if strict mode disabled)
 - Additional prompt for question generation
 
@@ -79,16 +114,102 @@ This will guide you through setting up:
 bel-ai-jar disable
 ```
 
+---
+
 ## Configuration
 
-Configuration is stored in `.bel-ai-jar.json` in your project root.
+Configuration is stored in `.bel-ai-jar.json` in your project root. This file is automatically added to `.gitignore` during `init`.
+
+### Security: API Keys
+
+**API keys are never stored in the config file.**
+
+Set your API key as an environment variable before running `bel-ai-jar init`:
+
+```bash
+# Mistral
+export MISTRAL_API_KEY='your-mistral-api-key'
+
+# OpenAI
+export OPENAI_API_KEY='your-openai-api-key'
+```
+
+Add the export to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.) to persist it across sessions. bel-ai-jar will automatically read the key from the environment at runtime.
+
+---
 
 ## Development
 
+### Python
+
 ```bash
-# Install in development mode
-pip install -e .
+cd src/python
+
+# Install in development mode (includes test dependencies)
+pip install -e ".[dev]"
 
 # Run tests
 python -m pytest
 ```
+
+### JavaScript
+
+```bash
+cd src/javascript
+npm install
+
+# Run tests
+npm test
+```
+
+---
+
+## Repository Structure
+
+```
+bel-ai-jar/
+├── src/
+│   ├── python/           # Python package (pip)
+│   │   ├── bel_ai_jar/   # Source code
+│   │   ├── tests/        # Pytest tests
+│   │   └── pyproject.toml
+│   └── javascript/       # JavaScript package (npm)
+│       ├── src/          # Source code
+│       ├── tests/        # Jest tests
+│       └── package.json
+├── documentation/
+├── logo.webp
+└── README.md
+```
+
+---
+
+## Publishing
+
+### PyPI
+
+```bash
+cd src/python
+pip install build twine
+python -m build
+twine upload dist/*
+```
+
+### npm
+
+```bash
+cd src/javascript
+npm publish
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/ichwanhs96/bel-ai-jar).
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (guided by bel-ai-jar itself 😄)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request

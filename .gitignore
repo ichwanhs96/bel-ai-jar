@@ -1,4 +1,5 @@
 __pycache__/
-bel_ai_jar.egg-info/
+*.egg-info/
 .bel-ai-jar.json
 .DS_Store
+src/javascript/node_modules/

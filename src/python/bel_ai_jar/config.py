@@ -47,7 +47,11 @@ class Config:
         return Path(".bel-ai-jar.json")
     
     def save(self) -> None:
-        """Save configuration to file"""
+        """Save configuration to file.
+
+        NOTE: API keys are never written to the config file for security reasons.
+        Use environment variables (MISTRAL_API_KEY, OPENAI_API_KEY) instead.
+        """
         config_data = {
             "total_questions": self.total_questions,
             "passing_grade": self.passing_grade,
@@ -55,20 +59,27 @@ class Config:
             "additional_prompt": self.additional_prompt,
             "strict_mode": self.strict_mode,
             "ai_model": self.ai_model,
-            "api_key": self.api_key,
             "model_params": self.model_params
         }
-        
+
         with open(self.config_path, "w") as f:
             json.dump(config_data, f, indent=2)
     
     def load(self) -> Dict[str, Any]:
-        """Load configuration from file"""
+        """Load configuration from file.
+
+        API keys are resolved from environment variables at runtime and are
+        never read from the config file.
+        """
         if not self.config_path.exists():
             return self.DEFAULT_CONFIG
-            
+
         with open(self.config_path, "r") as f:
-            return json.load(f)
+            data = json.load(f)
+
+        # Strip any api_key that may have been written by an older version
+        data.pop("api_key", None)
+        return data
     
     def delete_config(self) -> None:
         """Delete configuration file"""

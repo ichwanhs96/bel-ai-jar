@@ -1,0 +1,36 @@
+{
+  "name": "bel-ai-jar",
+  "version": "0.1.0",
+  "description": "Git hooks for understanding AI-generated code changes",
+  "keywords": ["git", "hooks", "ai", "code-review", "developer-tools", "llm"],
+  "author": "Ichwan <ichwanharyosembodo96@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/ichwanhs96/bel-ai-jar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ichwanhs96/bel-ai-jar.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ichwanhs96/bel-ai-jar/issues"
+  },
+  "main": "src/index.js",
+  "bin": {
+    "bel-ai-jar": "src/cli.js"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"]
+  }
+}
