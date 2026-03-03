@@ -20,19 +20,18 @@ jobs:
     - name: Run Python tests
       run: |
         cd src/python
-        ls
         pip install -e ".[dev]"
         python -m pytest
     - name: Install and build dependencies
       run: |
         cd src/python
-        ls
         python -m pip install --upgrade pip
         pip install build twine
         python -m build
-        ls
-        twine upload --repository testpypi dist/* --verbose
+        twine upload --repository testpypi dist/*
     - name: Publish to PyPI
+      run: |
+        cd src/python
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         skip-existing: true
