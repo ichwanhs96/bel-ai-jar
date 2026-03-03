@@ -4,12 +4,32 @@ Configuration management for bel-ai-jar
 import json
 import os
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
+
+# File patterns excluded from diff analysis by default.
+# These are lock files, build artefacts, and documentation that are not
+# worth quizzing developers on.
+DEFAULT_EXCLUDED_FILES: List[str] = [
+    "*.lock",
+    "package-lock.json",
+    "yarn.lock",
+    "poetry.lock",
+    "Pipfile.lock",
+    "*.min.js",
+    "*.min.css",
+    "*.map",
+    "dist/*",
+    "build/*",
+    "*.egg-info/*",
+    "__pycache__/*",
+    "*.pyc",
+    "*.md",
+]
 
 
 class Config:
     """Configuration management class"""
-    
+
     DEFAULT_CONFIG = {
         "total_questions": 3,
         "passing_grade": 100,
@@ -17,10 +37,11 @@ class Config:
         "additional_prompt": None,
         "strict_mode": True,
         "ai_model": "mistral",
-        "api_key": None,
-        "model_params": {}
+        "model_params": {},
+        "max_diff_lines": 1000,
+        "excluded_files": DEFAULT_EXCLUDED_FILES,
     }
-    
+
     def __init__(
         self,
         total_questions: int = 3,
@@ -30,7 +51,9 @@ class Config:
         strict_mode: bool = True,
         ai_model: str = "mistral",
         api_key: Optional[str] = None,
-        model_params: Optional[Dict[str, Any]] = None
+        model_params: Optional[Dict[str, Any]] = None,
+        max_diff_lines: int = 1000,
+        excluded_files: Optional[List[str]] = None,
     ):
         self.total_questions = total_questions
         self.passing_grade = passing_grade
@@ -40,6 +63,8 @@ class Config:
         self.ai_model = ai_model
         self.api_key = api_key
         self.model_params = model_params or {}
+        self.max_diff_lines = max_diff_lines
+        self.excluded_files = excluded_files if excluded_files is not None else list(DEFAULT_EXCLUDED_FILES)
         self.config_path = self._get_config_path()
     
     def _get_config_path(self) -> Path:
@@ -59,7 +84,9 @@ class Config:
             "additional_prompt": self.additional_prompt,
             "strict_mode": self.strict_mode,
             "ai_model": self.ai_model,
-            "model_params": self.model_params
+            "model_params": self.model_params,
+            "max_diff_lines": self.max_diff_lines,
+            "excluded_files": self.excluded_files,
         }
 
         with open(self.config_path, "w") as f:
@@ -99,8 +126,9 @@ class Config:
             additional_prompt=file_config.get("additional_prompt"),
             strict_mode=file_config.get("strict_mode", True),
             ai_model=file_config.get("ai_model", "mistral"),
-            api_key=file_config.get("api_key"),
-            model_params=file_config.get("model_params", {})
+            model_params=file_config.get("model_params", {}),
+            max_diff_lines=file_config.get("max_diff_lines", 1000),
+            excluded_files=file_config.get("excluded_files", list(DEFAULT_EXCLUDED_FILES)),
         )
     
     def __repr__(self) -> str:

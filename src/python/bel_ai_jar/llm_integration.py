@@ -15,8 +15,29 @@ class AIModel(Enum):
     MISTRAL = "mistral"
     OPENAI_GPT35 = "openai-gpt3.5"
     OPENAI_GPT4 = "openai-gpt4"
-    ANTHROPIC_CLAUDE = "anthropic-claude"
+    GEMINI = "gemini"
     LOCAL_LLAMA = "local-llama"
+
+
+def _resolve_api_key(model: "AIModel", explicit_key: Optional[str] = None) -> Optional[str]:
+    """Resolve the API key with priority:
+      1. Explicitly passed key
+      2. BEL_AI_JAR_LLM_API_KEY (generic, model-agnostic)
+      3. Legacy model-specific env vars (backward-compatible fallback)
+    """
+    if explicit_key:
+        return explicit_key
+    generic = os.environ.get("BEL_AI_JAR_LLM_API_KEY")
+    if generic:
+        return generic
+    # Legacy fallbacks
+    if model == AIModel.MISTRAL:
+        return os.environ.get("MISTRAL_API_KEY")
+    if model in (AIModel.OPENAI_GPT35, AIModel.OPENAI_GPT4):
+        return os.environ.get("OPENAI_API_KEY")
+    if model == AIModel.GEMINI:
+        return os.environ.get("GOOGLE_API_KEY")
+    return None
 
 
 class LLMClient:
@@ -193,6 +214,89 @@ IMPORTANT: Respond with ONLY the JSON array, no explanations, no markdown, just 
         return questions
 
 
+class GeminiClient(LLMClient):
+    """Google Gemini API client"""
+
+    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+    MODEL_NAME = "gemini-1.5-flash"
+
+    def __init__(self, model: AIModel, api_key: Optional[str] = None, **kwargs):
+        super().__init__(model, api_key, **kwargs)
+
+    def generate_questions(self, code_diff: str, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Generate questions using Google Gemini API"""
+        if not self.api_key:
+            logging.error("No API key found for Gemini. Using fallback questions.")
+            return self._fallback_questions(code_diff, config)
+
+        prompt = self._build_prompt(code_diff, config)
+        url = f"{self.BASE_URL}/{self.MODEL_NAME}:generateContent?key={self.api_key}"
+
+        data = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 1000},
+        }
+
+        try:
+            response = requests.post(url, json=data, timeout=30)
+            response.raise_for_status()
+            result = response.json()
+
+            questions_json = result["candidates"][0]["content"]["parts"][0]["text"]
+
+            questions_json = questions_json.strip()
+            if questions_json.startswith("```json"):
+                questions_json = questions_json[7:].strip()
+            if questions_json.endswith("```"):
+                questions_json = questions_json[:-3].strip()
+
+            try:
+                questions = json.loads(questions_json)
+                if isinstance(questions, list):
+                    return questions
+                return [questions] if questions else []
+            except json.JSONDecodeError as e:
+                logging.error(f"Failed to parse Gemini response as JSON: {e}")
+                return self._fallback_questions(code_diff, config)
+
+        except Exception as e:
+            logging.error(f"Gemini API error: {e}")
+            return self._fallback_questions(code_diff, config)
+
+    def _build_prompt(self, code_diff: str, config: Dict[str, Any]) -> str:
+        """Build prompt for Gemini"""
+        additional_prompt = config.get("additional_prompt", "")
+        num_questions = config.get("total_questions", 3)
+        num_options = config.get("answer_options", 4)
+
+        return f"""You are a coding educator. Analyze the following code changes and generate {num_questions} multiple-choice questions to help the developer understand what the code does.
+
+Code changes:
+{code_diff}
+
+{additional_prompt}
+
+Requirements:
+1. Generate exactly {num_questions} questions
+2. Each question should have exactly {num_options} answer options
+3. Only one option should be correct
+4. Questions should test understanding of the code changes
+5. Return ONLY valid JSON, nothing else
+6. The JSON must be parseable and follow this exact format:
+[
+  {{
+    "question": "Your question here",
+    "options": ["option1", "option2", "option3", "option4"],
+    "correct_answer": "The correct option"
+  }}
+]
+
+IMPORTANT: Respond with ONLY the JSON array, no explanations, no markdown, just valid JSON."""
+
+    def _fallback_questions(self, code_diff: str, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+        return OpenAIClient(self.model, "")._fallback_questions(code_diff, config)
+
+
 class LocalLlamaClient(LLMClient):
     """Local Llama.cpp client"""
     
@@ -248,14 +352,13 @@ class LocalLlamaClient(LLMClient):
 
 def get_llm_client(model: AIModel, api_key: Optional[str] = None, **kwargs) -> LLMClient:
     """Factory function to get appropriate LLM client"""
+    resolved_key = _resolve_api_key(model, api_key)
     if model == AIModel.MISTRAL:
-        if not api_key:
-            api_key = os.environ.get("MISTRAL_API_KEY")
-        return OpenAIClient(model, api_key, **kwargs)  # Mistral uses similar API
+        return OpenAIClient(model, resolved_key, **kwargs)
     elif model in [AIModel.OPENAI_GPT35, AIModel.OPENAI_GPT4]:
-        if not api_key:
-            api_key = os.environ.get("OPENAI_API_KEY")
-        return OpenAIClient(model, api_key, **kwargs)
+        return OpenAIClient(model, resolved_key, **kwargs)
+    elif model == AIModel.GEMINI:
+        return GeminiClient(model, resolved_key, **kwargs)
     elif model == AIModel.LOCAL_LLAMA:
         return LocalLlamaClient(model, **kwargs)
     else:

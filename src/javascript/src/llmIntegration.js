@@ -9,6 +9,7 @@ const AI_MODELS = {
   MISTRAL: 'mistral',
   OPENAI_GPT35: 'openai-gpt3.5',
   OPENAI_GPT4: 'openai-gpt4',
+  GEMINI: 'gemini',
   LOCAL_LLAMA: 'local-llama',
 };
 
@@ -77,10 +78,14 @@ function fallbackQuestions(codeDiff, config) {
 
 /**
  * Resolve API key from environment for the given model.
+ * Priority: BEL_AI_JAR_LLM_API_KEY > legacy model-specific vars.
  */
 function resolveApiKey(model) {
+  const generic = process.env.BEL_AI_JAR_LLM_API_KEY;
+  if (generic) return generic;
   if (model === AI_MODELS.MISTRAL) return process.env.MISTRAL_API_KEY || null;
   if (model.startsWith('openai')) return process.env.OPENAI_API_KEY || null;
+  if (model === AI_MODELS.GEMINI) return process.env.GOOGLE_API_KEY || null;
   return null;
 }
 
@@ -155,6 +160,36 @@ async function callLocalLlama(codeDiff, config, apiUrl = 'http://localhost:8080/
 }
 
 /**
+ * Call the Google Gemini API.
+ */
+async function callGemini(codeDiff, config, apiKey) {
+  const fetch = (await import('node-fetch')).default;
+
+  const prompt = buildPrompt(codeDiff, config);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1000 },
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  response.ok || (() => { throw new Error(`HTTP ${response.status}`); })();
+  const result = await response.json();
+  let raw = result?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  raw = raw.trim();
+  if (raw.startsWith('```json')) raw = raw.slice(7).trim();
+  if (raw.endsWith('```')) raw = raw.slice(0, -3).trim();
+
+  return JSON.parse(raw);
+}
+
+/**
  * Generate questions using the configured LLM, with fallback on failure.
  *
  * @param {string} codeDiff
@@ -173,6 +208,9 @@ async function generateQuestionsWithLLM(codeDiff, config) {
     if (!apiKey) {
       console.error(`[bel-ai-jar] No API key found for model "${model}". Using fallback questions.`);
       return fallbackQuestions(codeDiff, config);
+    }
+    if (model === AI_MODELS.GEMINI) {
+      return await callGemini(codeDiff, config, apiKey);
     }
     return await callOpenAICompatible(codeDiff, config, model, apiKey);
   } catch (err) {

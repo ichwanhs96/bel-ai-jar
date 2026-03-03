@@ -6,7 +6,7 @@ import os
 import sys
 from typing import Optional
 from pathlib import Path
-from .config import Config
+from .config import Config, DEFAULT_EXCLUDED_FILES
 from .git_hooks import setup_git_hooks, remove_git_hooks
 
 
@@ -44,10 +44,11 @@ def init_command():
     print("1. Mistral AI (default)")
     print("2. OpenAI GPT-3.5")
     print("3. OpenAI GPT-4")
-    print("4. Local Llama instance")
-    
-    model_choice = input("Select AI model (1-4, default 1): ") or "1"
-    
+    print("4. Google Gemini")
+    print("5. Local Llama instance")
+
+    model_choice = input("Select AI model (1-5, default 1): ") or "1"
+
     if model_choice == "1":
         ai_model = "mistral"
     elif model_choice == "2":
@@ -55,33 +56,29 @@ def init_command():
     elif model_choice == "3":
         ai_model = "openai-gpt4"
     elif model_choice == "4":
+        ai_model = "gemini"
+    elif model_choice == "5":
         ai_model = "local-llama"
     else:
         ai_model = "mistral"
-    
+
     # API Key guidance — keys are never stored in the config file
     api_key = None
-    if ai_model == "mistral":
-        env_var = "MISTRAL_API_KEY"
-        if not os.environ.get(env_var):
+    if ai_model != "local-llama":
+        generic_key = os.environ.get("BEL_AI_JAR_LLM_API_KEY")
+        if generic_key:
+            print("✅ BEL_AI_JAR_LLM_API_KEY environment variable detected.")
+        else:
             print(f"\n🔐 Security notice: API keys are NOT stored in the config file.")
             print(f"   Set your key as an environment variable:")
-            print(f"   export {env_var}='your-api-key-here'")
+            print(f"   export BEL_AI_JAR_LLM_API_KEY='your-api-key-here'")
             print(f"   (add this to your shell profile, e.g. ~/.zshrc or ~/.bashrc)\n")
-        else:
-            print(f"✅ {env_var} environment variable detected.")
-    elif ai_model.startswith("openai"):
-        env_var = "OPENAI_API_KEY"
-        if not os.environ.get(env_var):
-            print(f"\n🔐 Security notice: API keys are NOT stored in the config file.")
-            print(f"   Set your key as an environment variable:")
-            print(f"   export {env_var}='your-api-key-here'")
-            print(f"   (add this to your shell profile, e.g. ~/.zshrc or ~/.bashrc)\n")
-        else:
-            print(f"✅ {env_var} environment variable detected.")
 
     if ai_model == "local-llama":
-        llama_url = input("Enter Local Llama API URL (default http://localhost:8080/completion): ") or "http://localhost:8080/completion"
+        llama_url = (
+            input("Enter Local Llama API URL (default http://localhost:8080/completion): ")
+            or "http://localhost:8080/completion"
+        )
         model_params = {"api_url": llama_url}
     else:
         model_params = {}
@@ -159,28 +156,76 @@ def evaluate_command():
     exit(0 if success else 1)
 
 
+def help_command():
+    """Print detailed help including all config options."""
+    config = Config()
+    excluded_preview = "\n".join(f"      {p}" for p in DEFAULT_EXCLUDED_FILES)
+    print(f"""
+bel-ai-jar — Git hooks for understanding AI-generated code changes
+Config file: {config.config_path.resolve()} (created by 'init')
+
+COMMANDS
+  init       Initialize bel-ai-jar in the current git repository
+  disable    Remove git hooks and delete the config file
+  evaluate   Run evaluation manually (also called internally by the git hook)
+  help       Show this help message
+
+CONFIG OPTIONS (.bel-ai-jar.json)
+  total_questions    int    Questions asked per evaluation          (default: 3)
+  answer_options     int    Answer choices per question             (default: 4)
+  strict_mode        bool   Require 100% score to pass             (default: true)
+  passing_grade      int    Passing % when strict_mode is false    (default: 100)
+  ai_model           str    LLM backend to use                     (default: "mistral")
+                            Options: mistral | openai-gpt3.5 | openai-gpt4 | gemini | local-llama
+  additional_prompt  str    Extra instructions for question gen    (default: null)
+  max_diff_lines     int    Max diff lines sent to LLM             (default: 1000)
+                            Larger diffs are trimmed to this limit before prompting.
+  excluded_files     list   Glob patterns of files to skip         (default: see below)
+{excluded_preview}
+  model_params       obj    Extra params for local-llama backend   (default: {{}})
+                            Example: {{"api_url": "http://localhost:8080/completion"}}
+
+API KEYS  (never stored in config — use environment variables)
+  BEL_AI_JAR_LLM_API_KEY   Generic key — works for any model (recommended)
+  MISTRAL_API_KEY            Legacy fallback for Mistral AI
+  OPENAI_API_KEY             Legacy fallback for OpenAI
+  GOOGLE_API_KEY             Legacy fallback for Google Gemini
+
+INTERACTIVE COMMIT
+  BEL_AI_JAR_INTERACTIVE_COMMIT=1
+      Force evaluation when using 'git commit' without -m (interactive editor).
+      Evaluation is normally triggered automatically via the Co-Authored-By
+      trailer in the commit message.
+""")
+
+
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="bel-ai-jar - Git hooks for understanding AI-generated code changes"
+        description="bel-ai-jar - Git hooks for understanding AI-generated code changes",
+        epilog="Run 'bel-ai-jar help' for detailed config documentation.",
     )
-    
+
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
-    
+
     # Init command
     init_parser = subparsers.add_parser("init", help="Initialize bel-ai-jar configuration")
     init_parser.set_defaults(func=init_command)
-    
+
     # Disable command
     disable_parser = subparsers.add_parser("disable", help="Disable bel-ai-jar")
     disable_parser.set_defaults(func=disable_command)
-    
+
     # Evaluate command (for git hooks)
     evaluate_parser = subparsers.add_parser("evaluate", help="Evaluate code changes (used by git hooks)")
     evaluate_parser.set_defaults(func=evaluate_command)
-    
+
+    # Help command
+    help_parser = subparsers.add_parser("help", help="Show detailed help and config documentation")
+    help_parser.set_defaults(func=help_command)
+
     args = parser.parse_args()
-    
+
     if hasattr(args, "func"):
         args.func()
     else:

@@ -55,6 +55,7 @@ describe('AI_MODELS constants', () => {
     expect(AI_MODELS.MISTRAL).toBe('mistral');
     expect(AI_MODELS.OPENAI_GPT35).toBe('openai-gpt3.5');
     expect(AI_MODELS.OPENAI_GPT4).toBe('openai-gpt4');
+    expect(AI_MODELS.GEMINI).toBe('gemini');
     expect(AI_MODELS.LOCAL_LLAMA).toBe('local-llama');
   });
 });

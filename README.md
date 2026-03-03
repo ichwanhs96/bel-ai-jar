@@ -67,7 +67,7 @@ flowchart TD
 ## Tech Stack
 
 - **Python ≥ 3.8** / **Node.js ≥ 16**: Supported runtimes.
-- **Mistral / OpenAI / Local Llama**: Pluggable AI backends for question generation.
+- **Mistral / OpenAI / Gemini / Local Llama**: Pluggable AI backends for question generation.
 
 ---
 
@@ -104,7 +104,7 @@ bel-ai-jar init
 This will guide you through setting up:
 - Number of questions to ask (default: 3)
 - Number of answer options per question (default: 4)
-- AI model selection (Mistral, OpenAI GPT-3.5/4, or Local Llama)
+- AI model selection (Mistral, OpenAI GPT-3.5/4, Google Gemini, or Local Llama)
 - Strict mode (default: enabled — must answer all questions correctly)
 - Passing grade (if strict mode disabled)
 - Additional prompt for question generation
@@ -158,21 +158,57 @@ export BEL_AI_JAR_INTERACTIVE_COMMIT=1
 
 ## Configuration
 
-Configuration is stored in `.bel-ai-jar.json` in your project root. This file is automatically added to `.gitignore` during `init`.
+Configuration is stored in `.bel-ai-jar.json` in your project root. This file is automatically added to `.gitignore` during `init`. Run `bel-ai-jar help` at any time to see all options and their defaults in your terminal.
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `total_questions` | int | `3` | Questions asked per evaluation |
+| `answer_options` | int | `4` | Answer choices per question |
+| `strict_mode` | bool | `true` | Require 100% score to pass |
+| `passing_grade` | int | `100` | Passing % when `strict_mode` is false |
+| `ai_model` | string | `"mistral"` | LLM backend (`mistral` / `openai-gpt3.5` / `openai-gpt4` / `gemini` / `local-llama`) |
+| `additional_prompt` | string | `null` | Extra instructions appended to the question-generation prompt |
+| `max_diff_lines` | int | `1000` | Max diff lines sent to the LLM. Larger diffs are trimmed before prompting to reduce token usage. |
+| `excluded_files` | array | see below | Glob patterns of files to skip during diff analysis. |
+| `model_params` | object | `{}` | Extra params for the `local-llama` backend, e.g. `{"api_url": "..."}` |
+
+**Default `excluded_files` patterns** (lock files, build artefacts, documentation):
+```
+*.lock, package-lock.json, yarn.lock, poetry.lock, Pipfile.lock
+*.min.js, *.min.css, *.map
+dist/*, build/*, *.egg-info/*, __pycache__/*, *.pyc, *.md
+```
+
+You can override any of these by editing `.bel-ai-jar.json` directly. For example, to also skip test snapshots and increase the diff budget:
+
+```json
+{
+  "max_diff_lines": 500,
+  "excluded_files": [
+    "*.lock", "package-lock.json", "yarn.lock",
+    "dist/*", "build/*", "*.md",
+    "**/__snapshots__/*"
+  ]
+}
+```
 
 ### Security: API Keys
 
 **API keys are never stored in the config file.**
 
-Set your API key as an environment variable before running `bel-ai-jar init`:
+Set your API key as an environment variable before running `bel-ai-jar init`. Use the generic variable (works for any model) or the legacy model-specific ones:
 
 ```bash
-# Mistral
-export MISTRAL_API_KEY='your-mistral-api-key'
+# Generic — recommended, works for all models
+export BEL_AI_JAR_LLM_API_KEY='your-api-key'
 
-# OpenAI
-export OPENAI_API_KEY='your-openai-api-key'
+# Legacy model-specific fallbacks (still supported)
+export MISTRAL_API_KEY='your-mistral-api-key'   # Mistral AI
+export OPENAI_API_KEY='your-openai-api-key'     # OpenAI GPT-3.5 / GPT-4
+export GOOGLE_API_KEY='your-google-api-key'     # Google Gemini
 ```
+
+Key resolution priority: **explicit argument** > `BEL_AI_JAR_LLM_API_KEY` > model-specific legacy variable.
 
 Add the export to your shell profile (`~/.zshrc`, `~/.bashrc`, etc.) to persist it across sessions. bel-ai-jar will automatically read the key from the environment at runtime.
 

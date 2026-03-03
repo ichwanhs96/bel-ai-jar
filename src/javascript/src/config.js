@@ -5,6 +5,23 @@ const path = require('path');
 
 const CONFIG_FILENAME = '.bel-ai-jar.json';
 
+const DEFAULT_EXCLUDED_FILES = [
+  '*.lock',
+  'package-lock.json',
+  'yarn.lock',
+  'poetry.lock',
+  'Pipfile.lock',
+  '*.min.js',
+  '*.min.css',
+  '*.map',
+  'dist/*',
+  'build/*',
+  '*.egg-info/*',
+  '__pycache__/*',
+  '*.pyc',
+  '*.md',
+];
+
 const DEFAULT_CONFIG = {
   total_questions: 3,
   passing_grade: 100,
@@ -13,6 +30,8 @@ const DEFAULT_CONFIG = {
   strict_mode: true,
   ai_model: 'mistral',
   model_params: {},
+  max_diff_lines: 1000,
+  excluded_files: DEFAULT_EXCLUDED_FILES,
 };
 
 class Config {
@@ -24,6 +43,8 @@ class Config {
     this.strict_mode = options.strict_mode ?? DEFAULT_CONFIG.strict_mode;
     this.ai_model = options.ai_model ?? DEFAULT_CONFIG.ai_model;
     this.model_params = options.model_params ?? DEFAULT_CONFIG.model_params;
+    this.max_diff_lines = options.max_diff_lines ?? DEFAULT_CONFIG.max_diff_lines;
+    this.excluded_files = options.excluded_files ?? [...DEFAULT_EXCLUDED_FILES];
     // api_key is NEVER stored — resolved from environment variables at runtime
     this.config_path = CONFIG_FILENAME;
   }
@@ -42,6 +63,8 @@ class Config {
       strict_mode: this.strict_mode,
       ai_model: this.ai_model,
       model_params: this.model_params,
+      max_diff_lines: this.max_diff_lines,
+      excluded_files: this.excluded_files,
     };
     fs.writeFileSync(this.config_path, JSON.stringify(data, null, 2), 'utf8');
   }
@@ -72,4 +95,4 @@ class Config {
   }
 }
 
-module.exports = { Config, DEFAULT_CONFIG, CONFIG_FILENAME };
+module.exports = { Config, DEFAULT_CONFIG, DEFAULT_EXCLUDED_FILES, CONFIG_FILENAME };

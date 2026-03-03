@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, spawnSync } = require('child_process');
 const { Config } = require('./config');
+const { processDiff } = require('./diffProcessor');
 const { evaluateCodeChanges } = require('./evaluation');
 
 // Known AI tool names/domains found in Co-Authored-By trailers
@@ -149,13 +150,28 @@ async function evaluatePreCommit() {
       return true;
     }
 
-    const diff = getGitDiff(staged);
-    if (!diff) {
+    const rawDiff = getGitDiff(staged);
+    if (!rawDiff) {
       console.log('📝 No changes to evaluate');
       return true;
     }
 
-    return await evaluateCodeChanges(diff, config);
+    // Filter and trim the diff before sending to LLM
+    const { processedDiff, stats } = processDiff(rawDiff, config);
+
+    if (stats.filteredFiles) {
+      console.log(`   ↳ Skipped ${stats.filteredFiles} file(s) (lock/build/doc patterns)`);
+    }
+    if (stats.originalLines !== stats.finalLines) {
+      console.log(`   ↳ Diff reduced: ${stats.originalLines} → ${stats.finalLines} lines`);
+    }
+
+    if (!processedDiff) {
+      console.log('📝 No relevant changes to evaluate after filtering');
+      return true;
+    }
+
+    return await evaluateCodeChanges(processedDiff, config);
   } catch (err) {
     console.error(`❌ Error during evaluation: ${err.message}`);
     return false;

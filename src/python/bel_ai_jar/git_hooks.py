@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import List
 from .config import Config
+from .diff_processor import process_diff
 from .evaluation import evaluate_code_changes
 
 # Known AI tool names/domains found in Co-Authored-By trailers
@@ -151,6 +152,18 @@ def evaluate_pre_commit() -> bool:
 
         if not diff_output:
             print("📝 No changes to evaluate")
+            return True
+
+        # Filter and trim the diff before sending to LLM
+        diff_output, stats = process_diff(diff_output, config)
+
+        if stats["filtered_files"]:
+            print(f"   ↳ Skipped {stats['filtered_files']} file(s) (lock/build/doc patterns)")
+        if stats["original_lines"] != stats["final_lines"]:
+            print(f"   ↳ Diff reduced: {stats['original_lines']} → {stats['final_lines']} lines")
+
+        if not diff_output:
+            print("📝 No relevant changes to evaluate after filtering")
             return True
 
         # Evaluate code changes
