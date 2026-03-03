@@ -21,10 +21,12 @@ jobs:
       run: |
         cd src/python
         ls
-        python -m pip install .
+        python -m pip install -e .
         python -m pytest
     - name: Install and build dependencies
       run: |
+        cd src/python
+        ls
         python -m pip install --upgrade pip
         pip install build
         python -m build
