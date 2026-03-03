@@ -21,7 +21,7 @@ jobs:
       run: |
         cd src/python
         ls
-        python -m pip install -e .
+        pip install -e ".[dev]"
         python -m pytest
     - name: Install and build dependencies
       run: |
