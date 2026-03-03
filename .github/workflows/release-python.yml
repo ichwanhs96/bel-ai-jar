@@ -28,8 +28,10 @@ jobs:
         cd src/python
         ls
         python -m pip install --upgrade pip
-        pip install build
+        pip install build twine
         python -m build
+        ls
+        twine upload --repository testpypi dist/* --verbose
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
