@@ -130,19 +130,21 @@ function getGitDiff(files) {
 
 /**
  * Entry point called by the pre-commit hook.
- * Evaluation only runs when the commit is co-authored by an AI tool.
- * Pure human commits are passed through immediately.
+ * By default evaluation runs on every commit. When ai_coauthored_only is
+ * enabled in the config, only commits with an AI Co-Authored-By trailer
+ * are evaluated; pure human commits are passed through immediately.
  * @returns {Promise<boolean>}
  */
 async function evaluatePreCommit() {
   try {
-    if (!isAiCoauthored()) {
+    // Load config first so we can read ai_coauthored_only
+    const config = Config.fromFile();
+
+    if (config.ai_coauthored_only && !isAiCoauthored()) {
       console.log('✅ No AI co-author detected — skipping bel-ai-jar evaluation.');
       console.log('   Tip: set BEL_AI_JAR_INTERACTIVE_COMMIT=1 to force evaluation.');
       return true;
     }
-
-    const config = Config.fromFile();
     const staged = getStagedFiles();
 
     if (!staged.length) {

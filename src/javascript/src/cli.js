@@ -158,6 +158,9 @@ CONFIG OPTIONS (.bel-ai-jar.json)
   passing_grade      number   Passing % when strict_mode is false    (default: 100)
   ai_model           string   LLM backend to use                     (default: "mistral")
                               Options: mistral | openai-gpt3.5 | openai-gpt4 | gemini | local-llama
+  ai_coauthored_only boolean  Only evaluate AI co-authored commits   (default: false)
+                              false = evaluate every commit (recommended)
+                              true  = skip commits without an AI Co-Authored-By trailer
   additional_prompt  string   Extra instructions for question gen    (default: null)
   max_diff_lines     number   Max diff lines sent to LLM             (default: 1000)
                               Larger diffs are trimmed to this limit before prompting.

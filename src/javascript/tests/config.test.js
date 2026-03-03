@@ -31,6 +31,7 @@ describe('Config – defaults', () => {
     expect(c.strict_mode).toBe(true);
     expect(c.ai_model).toBe('mistral');
     expect(c.model_params).toEqual({});
+    expect(c.ai_coauthored_only).toBe(false);
   });
 });
 
@@ -79,6 +80,22 @@ describe('Config – save / load', () => {
     expect(loaded.additional_prompt).toBe('Focus on security');
     expect(loaded.strict_mode).toBe(false);
     expect(loaded.ai_model).toBe('openai-gpt4');
+  });
+});
+
+describe('Config – ai_coauthored_only', () => {
+  test('defaults to false', () => {
+    expect(new Config().ai_coauthored_only).toBe(false);
+  });
+
+  test('saved and loaded correctly', () => {
+    new Config({ ai_coauthored_only: true }).save();
+    expect(Config.fromFile().ai_coauthored_only).toBe(true);
+  });
+
+  test('defaults to false when missing from old config file', () => {
+    fs.writeFileSync('.bel-ai-jar.json', JSON.stringify({ total_questions: 3 }));
+    expect(Config.fromFile().ai_coauthored_only).toBe(false);
   });
 });
 

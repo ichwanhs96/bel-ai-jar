@@ -32,6 +32,7 @@ const DEFAULT_CONFIG = {
   model_params: {},
   max_diff_lines: 1000,
   excluded_files: DEFAULT_EXCLUDED_FILES,
+  ai_coauthored_only: false,
 };
 
 class Config {
@@ -45,6 +46,7 @@ class Config {
     this.model_params = options.model_params ?? DEFAULT_CONFIG.model_params;
     this.max_diff_lines = options.max_diff_lines ?? DEFAULT_CONFIG.max_diff_lines;
     this.excluded_files = options.excluded_files ?? [...DEFAULT_EXCLUDED_FILES];
+    this.ai_coauthored_only = options.ai_coauthored_only ?? DEFAULT_CONFIG.ai_coauthored_only;
     // api_key is NEVER stored — resolved from environment variables at runtime
     this.config_path = CONFIG_FILENAME;
   }
@@ -65,6 +67,7 @@ class Config {
       model_params: this.model_params,
       max_diff_lines: this.max_diff_lines,
       excluded_files: this.excluded_files,
+      ai_coauthored_only: this.ai_coauthored_only,
     };
     fs.writeFileSync(this.config_path, JSON.stringify(data, null, 2), 'utf8');
   }

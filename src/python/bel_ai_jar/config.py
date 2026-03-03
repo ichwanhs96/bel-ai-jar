@@ -40,6 +40,7 @@ class Config:
         "model_params": {},
         "max_diff_lines": 1000,
         "excluded_files": DEFAULT_EXCLUDED_FILES,
+        "ai_coauthored_only": False,
     }
 
     def __init__(
@@ -54,6 +55,7 @@ class Config:
         model_params: Optional[Dict[str, Any]] = None,
         max_diff_lines: int = 1000,
         excluded_files: Optional[List[str]] = None,
+        ai_coauthored_only: bool = False,
     ):
         self.total_questions = total_questions
         self.passing_grade = passing_grade
@@ -65,6 +67,7 @@ class Config:
         self.model_params = model_params or {}
         self.max_diff_lines = max_diff_lines
         self.excluded_files = excluded_files if excluded_files is not None else list(DEFAULT_EXCLUDED_FILES)
+        self.ai_coauthored_only = ai_coauthored_only
         self.config_path = self._get_config_path()
     
     def _get_config_path(self) -> Path:
@@ -87,6 +90,7 @@ class Config:
             "model_params": self.model_params,
             "max_diff_lines": self.max_diff_lines,
             "excluded_files": self.excluded_files,
+            "ai_coauthored_only": self.ai_coauthored_only,
         }
 
         with open(self.config_path, "w") as f:
@@ -129,6 +133,7 @@ class Config:
             model_params=file_config.get("model_params", {}),
             max_diff_lines=file_config.get("max_diff_lines", 1000),
             excluded_files=file_config.get("excluded_files", list(DEFAULT_EXCLUDED_FILES)),
+            ai_coauthored_only=file_config.get("ai_coauthored_only", False),
         )
     
     def __repr__(self) -> str:

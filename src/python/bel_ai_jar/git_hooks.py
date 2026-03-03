@@ -128,17 +128,18 @@ def remove_git_hooks() -> None:
 def evaluate_pre_commit() -> bool:
     """Evaluate code changes during pre-commit.
 
-    Evaluation only runs when the commit is co-authored by an AI tool.
-    Pure human commits are passed through immediately.
+    By default evaluation runs on every commit. When ai_coauthored_only is
+    enabled in the config, only commits with an AI Co-Authored-By trailer
+    are evaluated; pure human commits are passed through immediately.
     """
     try:
-        if not is_ai_coauthored():
+        # Load configuration first so we can read ai_coauthored_only
+        config = Config.from_file()
+
+        if config.ai_coauthored_only and not is_ai_coauthored():
             print("✅ No AI co-author detected — skipping bel-ai-jar evaluation.")
             print("   Tip: set BEL_AI_JAR_INTERACTIVE_COMMIT=1 to force evaluation.")
             return True
-
-        # Load configuration
-        config = Config.from_file()
 
         # Get staged changes
         staged_files = get_staged_files()

@@ -44,11 +44,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A1[User made code changes using AI agents] --> A2[User runs git commit]
+    A1[User made code changes] --> A2[User runs git commit]
     A2 --> A3[bel-ai-jar pre-commit hook triggers]
-    A3 --> A4{AI co-author detected?}
-    A4 --> |No - pure human commit| A9[Commit proceeds immediately]
-    A4 --> |Yes| A5[bel-ai-jar analyzes staged changes and generates questions]
+    A3 --> A4{ai_coauthored_only enabled?}
+    A4 --> |No - default| A5[bel-ai-jar analyzes staged changes and generates questions]
+    A4 --> |Yes| A4b{AI co-author detected?}
+    A4b --> |No| A9[Commit proceeds immediately]
+    A4b --> |Yes| A5
     A5 --> A6[User answers each question]
     A6 --> |pass| A7[Code successfully committed]
     A6 --> |fail| A8[Commit rejected — user must review the changes]
@@ -58,9 +60,9 @@ flowchart TD
 ## Architecture Flow
 
 1. When you run `git commit`, the pre-commit hook triggers.
-2. Bel-ai-jar checks whether the commit is **co-authored by an AI tool** (e.g. Claude, Copilot). If no AI co-author is detected, the commit proceeds immediately — no quiz needed.
-3. For AI co-authored commits, bel-ai-jar analyzes your staged changes.
-4. It generates multiple-choice questions about the code changes using an LLM.
+2. By default, bel-ai-jar evaluates **every commit** regardless of who wrote the code.
+3. If `ai_coauthored_only: true` is set in the config, bel-ai-jar first checks whether the commit is **co-authored by an AI tool** (e.g. Claude, Copilot). If no AI co-author is detected, the commit proceeds immediately — no quiz needed.
+4. Bel-ai-jar analyzes your staged changes and generates multiple-choice questions using an LLM.
 5. You answer the questions in your terminal.
 6. If you pass, the commit proceeds. If you fail, the commit is rejected and you must review the changes before trying again.
 
@@ -167,6 +169,7 @@ Configuration is stored in `.bel-ai-jar.json` in your project root. This file is
 | `strict_mode` | bool | `true` | Require 100% score to pass |
 | `passing_grade` | int | `100` | Passing % when `strict_mode` is false |
 | `ai_model` | string | `"mistral"` | LLM backend (`mistral` / `openai-gpt3.5` / `openai-gpt4` / `gemini` / `local-llama`) |
+| `ai_coauthored_only` | bool | `false` | When `false` (default), every commit triggers evaluation. Set to `true` to only evaluate commits that contain an AI `Co-Authored-By` trailer. |
 | `additional_prompt` | string | `null` | Extra instructions appended to the question-generation prompt |
 | `max_diff_lines` | int | `1000` | Max diff lines sent to the LLM. Larger diffs are trimmed before prompting to reduce token usage. |
 | `excluded_files` | array | see below | Glob patterns of files to skip during diff analysis. |

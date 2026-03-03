@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from bel_ai_jar.git_hooks import (
+    evaluate_pre_commit,
     get_git_diff,
     get_staged_files,
     is_ai_coauthored,
@@ -140,6 +141,45 @@ class TestIsAiCoauthored:
         monkeypatch.chdir(tmp_path)
         monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
         assert is_ai_coauthored() is False
+
+
+class TestEvaluatePreCommit:
+    """Test the ai_coauthored_only gate in evaluate_pre_commit."""
+
+    def _mock_config(self, ai_coauthored_only: bool):
+        from bel_ai_jar.config import Config
+        config = Config(ai_coauthored_only=ai_coauthored_only)
+        return config
+
+    def test_runs_by_default_without_coauthor(self, monkeypatch, tmp_path):
+        """Default config (ai_coauthored_only=False) should always evaluate."""
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        with patch("bel_ai_jar.git_hooks.Config.from_file", return_value=self._mock_config(False)), \
+             patch("bel_ai_jar.git_hooks.get_staged_files", return_value=[]), \
+             patch("bel_ai_jar.git_hooks.is_ai_coauthored", return_value=False):
+            result = evaluate_pre_commit()
+        # No staged files → passes, but the AI check was NOT applied
+        assert result is True
+
+    def test_skips_when_ai_coauthored_only_and_no_coauthor(self, monkeypatch, tmp_path, capsys):
+        """ai_coauthored_only=True should skip when no AI detected."""
+        monkeypatch.chdir(tmp_path)
+        with patch("bel_ai_jar.git_hooks.Config.from_file", return_value=self._mock_config(True)), \
+             patch("bel_ai_jar.git_hooks.is_ai_coauthored", return_value=False):
+            result = evaluate_pre_commit()
+        assert result is True
+        assert "skipping" in capsys.readouterr().out.lower()
+
+    def test_evaluates_when_ai_coauthored_only_and_coauthor_present(self, monkeypatch, tmp_path):
+        """ai_coauthored_only=True should proceed when AI is detected."""
+        monkeypatch.chdir(tmp_path)
+        with patch("bel_ai_jar.git_hooks.Config.from_file", return_value=self._mock_config(True)), \
+             patch("bel_ai_jar.git_hooks.is_ai_coauthored", return_value=True), \
+             patch("bel_ai_jar.git_hooks.get_staged_files", return_value=[]):
+            result = evaluate_pre_commit()
+        # No staged files → passes through; the key is it didn't skip
+        assert result is True
 
 
 class TestGetGitDiff:

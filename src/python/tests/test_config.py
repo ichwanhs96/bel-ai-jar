@@ -27,6 +27,7 @@ class TestConfigDefaults:
         assert config.ai_model == "mistral"
         assert config.api_key is None
         assert config.model_params == {}
+        assert config.ai_coauthored_only is False
 
     def test_config_path(self):
         config = Config()
@@ -85,6 +86,18 @@ class TestConfigSaveLoad:
         loaded = Config.from_file()
         # Keys not in file should fall back to defaults
         assert loaded.passing_grade == 100
+
+    def test_ai_coauthored_only_saved_and_loaded(self):
+        Config(ai_coauthored_only=True).save()
+        loaded = Config.from_file()
+        assert loaded.ai_coauthored_only is True
+
+    def test_ai_coauthored_only_defaults_to_false_when_missing(self):
+        """Old config files without the key should default to False."""
+        import json
+        Path(".bel-ai-jar.json").write_text(json.dumps({"total_questions": 3}))
+        loaded = Config.from_file()
+        assert loaded.ai_coauthored_only is False
 
 
 class TestConfigDelete:
