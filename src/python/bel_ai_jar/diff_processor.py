@@ -2,6 +2,8 @@
 Diff processor for bel-ai-jar.
 Filters and trims git diffs to reduce LLM token consumption.
 """
+from __future__ import annotations
+
 import fnmatch
 import re
 from typing import Dict, List
