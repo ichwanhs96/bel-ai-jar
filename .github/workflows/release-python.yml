@@ -22,14 +22,13 @@ jobs:
         cd src/python
         pip install -e ".[dev]"
         python -m pytest
-    - name: Install and build dependencies
+    - name: Build package
       run: |
         cd src/python
-        python -m pip install --upgrade pip
-        pip install build twine
+        pip install build
         python -m build
-        cp dist/* /github/workspace/dist
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
+        packages-dir: src/python/dist/
         skip-existing: true
