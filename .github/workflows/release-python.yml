@@ -17,11 +17,10 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.8'
-    - name: Navigate to Python directory
-      run: |
-        cd src/python
     - name: Run Python tests
       run: |
+        cd src/python
+        ls
         python -m pip install .
         python -m pytest
     - name: Install and build dependencies
