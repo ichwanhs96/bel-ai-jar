@@ -44,24 +44,25 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A1[User made code changes in the project using AI agents] --> A2[User do code commit]
-    A2 --> A3[bel-ai-jar library git hooks interrupted on pre-commit and hold the user's code commit]
-    A3 --> A4[bel-ai-jar do evaluation by asking question]
-    A4 --> A5[user answers each asked question]
-    A5 --> |pass| A6[code succesfully committed]
-    A5 --> |fail| A7[code rejected]
-    A7 --> A8[user must learn the code changes]
+    A1[User made code changes using AI agents] --> A2[User runs git commit]
+    A2 --> A3[bel-ai-jar pre-commit hook triggers]
+    A3 --> A4{AI co-author detected?}
+    A4 --> |No - pure human commit| A9[Commit proceeds immediately]
+    A4 --> |Yes| A5[bel-ai-jar analyzes staged changes and generates questions]
+    A5 --> A6[User answers each question]
+    A6 --> |pass| A7[Code successfully committed]
+    A6 --> |fail| A8[Commit rejected — user must review the changes]
     A8 --> A2
 ```
 
 ## Architecture Flow
 
-1. When you run `git commit`, the pre-commit hook will trigger.
-2. Bel-ai-jar analyzes your staged changes.
-3. It generates questions about the code changes using AI.
-4. You answer the questions.
-5. If you pass the evaluation, your commit proceeds.
-6. If you fail, you need to review the changes and try again.
+1. When you run `git commit`, the pre-commit hook triggers.
+2. Bel-ai-jar checks whether the commit is **co-authored by an AI tool** (e.g. Claude, Copilot). If no AI co-author is detected, the commit proceeds immediately — no quiz needed.
+3. For AI co-authored commits, bel-ai-jar analyzes your staged changes.
+4. It generates multiple-choice questions about the code changes using an LLM.
+5. You answer the questions in your terminal.
+6. If you pass, the commit proceeds. If you fail, the commit is rejected and you must review the changes before trying again.
 
 ## Tech Stack
 
@@ -112,6 +113,45 @@ This will guide you through setting up:
 
 ```bash
 bel-ai-jar disable
+```
+
+---
+
+## How AI Co-author Detection Works
+
+Bel-ai-jar only runs the evaluation quiz when a commit is **co-authored by an AI tool**. Pure human commits are always passed through without interruption.
+
+### Automatic detection
+
+When you commit with `git commit -m "..."`, git writes the message to `.git/COMMIT_EDITMSG` before the hook runs. Bel-ai-jar scans that file for `Co-Authored-By:` trailers and matches against known AI tool signatures:
+
+| Tool | Detected pattern |
+|---|---|
+| Claude (Anthropic) | `anthropic`, `claude` |
+| GitHub Copilot | `copilot` |
+| ChatGPT | `chatgpt`, `openai` |
+| Gemini | `gemini` |
+| Cursor | `cursor` |
+| Codeium | `codeium` |
+| Tabnine | `tabnine` |
+
+Example commit message that triggers evaluation:
+```
+feat: add user authentication
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+```
+
+### Interactive commit fallback
+
+When using `git commit` without `-m` (interactive editor), the hook runs before you type the message, so the co-author trailer isn't available yet. Use the `BEL_AI_JAR_INTERACTIVE_COMMIT` env var to signal that this is an AI-assisted commit:
+
+```bash
+# Single commit
+BEL_AI_JAR_INTERACTIVE_COMMIT=1 git commit
+
+# Or export for the whole shell session if you're always pairing with AI
+export BEL_AI_JAR_INTERACTIVE_COMMIT=1
 ```
 
 ---

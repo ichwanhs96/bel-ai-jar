@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 from bel_ai_jar.git_hooks import (
     get_git_diff,
     get_staged_files,
+    is_ai_coauthored,
     remove_git_hooks,
     setup_git_hooks,
 )
@@ -89,6 +90,56 @@ class TestGetStagedFiles:
         with patch("subprocess.run", return_value=mock_result):
             files = get_staged_files()
         assert "" not in files
+
+
+class TestIsAiCoauthored:
+    def test_env_var_override_true(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("BEL_AI_JAR_INTERACTIVE_COMMIT", "1")
+        assert is_ai_coauthored() is True
+
+    def test_env_var_override_true_values(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        for val in ("true", "yes", "TRUE"):
+            monkeypatch.setenv("BEL_AI_JAR_INTERACTIVE_COMMIT", val)
+            assert is_ai_coauthored() is True
+
+    def test_env_var_not_set_returns_false(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        assert is_ai_coauthored() is False
+
+    def test_detects_claude_coauthor(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".git" / "COMMIT_EDITMSG").write_text(
+            "feat: add feature\n\nCo-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>\n"
+        )
+        assert is_ai_coauthored() is True
+
+    def test_detects_copilot_coauthor(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".git" / "COMMIT_EDITMSG").write_text(
+            "fix: bug\n\nCo-Authored-By: GitHub Copilot <copilot@github.com>\n"
+        )
+        assert is_ai_coauthored() is True
+
+    def test_ignores_human_coauthor(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        (tmp_path / ".git").mkdir()
+        (tmp_path / ".git" / "COMMIT_EDITMSG").write_text(
+            "refactor: cleanup\n\nCo-Authored-By: John Doe <john@example.com>\n"
+        )
+        assert is_ai_coauthored() is False
+
+    def test_no_commit_msg_file_returns_false(self, monkeypatch, tmp_path):
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.delenv("BEL_AI_JAR_INTERACTIVE_COMMIT", raising=False)
+        assert is_ai_coauthored() is False
 
 
 class TestGetGitDiff:

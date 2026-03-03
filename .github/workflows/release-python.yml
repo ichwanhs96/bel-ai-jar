@@ -24,6 +24,7 @@ jobs:
         python -m pytest
     - name: Build package
       run: |
+        cp README.md src/python/README.md
         cd src/python
         pip install build
         python -m build

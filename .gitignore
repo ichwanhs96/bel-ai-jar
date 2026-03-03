@@ -3,3 +3,5 @@ __pycache__/
 .bel-ai-jar.json
 .DS_Store
 src/javascript/node_modules/
+agents.md
+presentation/

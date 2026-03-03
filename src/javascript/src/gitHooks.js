@@ -6,6 +6,37 @@ const { execSync, spawnSync } = require('child_process');
 const { Config } = require('./config');
 const { evaluateCodeChanges } = require('./evaluation');
 
+// Known AI tool names/domains found in Co-Authored-By trailers
+const AI_COAUTHOR_PATTERNS = [
+  'anthropic', 'claude', 'copilot', 'chatgpt',
+  'openai', 'gemini', 'cursor', 'codeium', 'tabnine',
+];
+
+/**
+ * Return true if the staged commit appears to be co-authored by an AI tool.
+ *
+ * Detection strategy (in order):
+ * 1. BEL_AI_JAR_INTERACTIVE_COMMIT env var — set to '1' / 'true' to force-enable.
+ * 2. .git/COMMIT_EDITMSG — git writes this before the pre-commit hook runs
+ *    when the user passes -m "..." so Co-Authored-By lines are visible here.
+ */
+function isAiCoauthored() {
+  const envOverride = (process.env.BEL_AI_JAR_INTERACTIVE_COMMIT || '').toLowerCase();
+  if (['1', 'true', 'yes'].includes(envOverride)) return true;
+
+  const commitMsgPath = path.join('.git', 'COMMIT_EDITMSG');
+  if (fs.existsSync(commitMsgPath)) {
+    const content = fs.readFileSync(commitMsgPath, 'utf8').toLowerCase();
+    for (const line of content.split('\n')) {
+      if (line.includes('co-authored-by:')) {
+        if (AI_COAUTHOR_PATTERNS.some((p) => line.includes(p))) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 const PRE_COMMIT_HOOK = `#!/bin/bash
 # bel-ai-jar pre-commit hook
 
@@ -98,10 +129,18 @@ function getGitDiff(files) {
 
 /**
  * Entry point called by the pre-commit hook.
+ * Evaluation only runs when the commit is co-authored by an AI tool.
+ * Pure human commits are passed through immediately.
  * @returns {Promise<boolean>}
  */
 async function evaluatePreCommit() {
   try {
+    if (!isAiCoauthored()) {
+      console.log('✅ No AI co-author detected — skipping bel-ai-jar evaluation.');
+      console.log('   Tip: set BEL_AI_JAR_INTERACTIVE_COMMIT=1 to force evaluation.');
+      return true;
+    }
+
     const config = Config.fromFile();
     const staged = getStagedFiles();
 
@@ -123,4 +162,4 @@ async function evaluatePreCommit() {
   }
 }
 
-module.exports = { setupGitHooks, removeGitHooks, getStagedFiles, getGitDiff, evaluatePreCommit };
+module.exports = { setupGitHooks, removeGitHooks, getStagedFiles, getGitDiff, evaluatePreCommit, isAiCoauthored };

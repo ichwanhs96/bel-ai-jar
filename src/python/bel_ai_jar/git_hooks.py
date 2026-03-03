@@ -8,6 +8,41 @@ from typing import List
 from .config import Config
 from .evaluation import evaluate_code_changes
 
+# Known AI tool names/domains found in Co-Authored-By trailers
+_AI_COAUTHOR_PATTERNS = [
+    "anthropic",
+    "claude",
+    "copilot",
+    "chatgpt",
+    "openai",
+    "gemini",
+    "cursor",
+    "codeium",
+    "tabnine",
+]
+
+
+def is_ai_coauthored() -> bool:
+    """Return True if the staged commit appears to be co-authored by an AI tool.
+
+    Detection strategy (in order):
+    1. BEL_AI_JAR_INTERACTIVE_COMMIT env var — set to '1' / 'true' to force-enable.
+    2. .git/COMMIT_EDITMSG — git writes this before the pre-commit hook runs
+       when the user passes -m "..." so Co-Authored-By lines are visible here.
+    """
+    if os.environ.get("BEL_AI_JAR_INTERACTIVE_COMMIT", "").lower() in ("1", "true", "yes"):
+        return True
+
+    commit_msg_path = Path(".git/COMMIT_EDITMSG")
+    if commit_msg_path.exists():
+        content = commit_msg_path.read_text(errors="replace").lower()
+        for line in content.splitlines():
+            if "co-authored-by:" in line:
+                if any(pattern in line for pattern in _AI_COAUTHOR_PATTERNS):
+                    return True
+
+    return False
+
 
 def setup_git_hooks() -> None:
     """Setup git hooks for bel-ai-jar"""
@@ -90,30 +125,37 @@ def remove_git_hooks() -> None:
 
 
 def evaluate_pre_commit() -> bool:
-    """Evaluate code changes during pre-commit"""
+    """Evaluate code changes during pre-commit.
+
+    Evaluation only runs when the commit is co-authored by an AI tool.
+    Pure human commits are passed through immediately.
+    """
     try:
+        if not is_ai_coauthored():
+            print("✅ No AI co-author detected — skipping bel-ai-jar evaluation.")
+            print("   Tip: set BEL_AI_JAR_INTERACTIVE_COMMIT=1 to force evaluation.")
+            return True
+
         # Load configuration
         config = Config.from_file()
-        
+
         # Get staged changes
         staged_files = get_staged_files()
-        
+
         if not staged_files:
             print("📝 No staged files to evaluate")
             return True
-        
+
         # Get git diff for staged files
         diff_output = get_git_diff(staged_files)
-        
+
         if not diff_output:
             print("📝 No changes to evaluate")
             return True
-        
+
         # Evaluate code changes
-        result = evaluate_code_changes(diff_output, config)
-        
-        return result
-        
+        return evaluate_code_changes(diff_output, config)
+
     except Exception as e:
         print(f"❌ Error during evaluation: {e}")
         return False
