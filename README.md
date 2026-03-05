@@ -263,26 +263,6 @@ bel-ai-jar/
 
 ---
 
-## Publishing
-
-### PyPI
-
-```bash
-cd src/python
-pip install build twine
-python -m build
-twine upload dist/*
-```
-
-### npm
-
-```bash
-cd src/javascript
-npm publish
-```
-
----
-
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/ichwanhs96/bel-ai-jar).
