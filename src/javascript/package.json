@@ -1,6 +1,6 @@
 {
   "name": "bel-ai-jar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Git hooks for understanding AI-generated code changes",
   "keywords": ["git", "hooks", "ai", "code-review", "developer-tools", "llm"],
   "author": "Ichwan <ichwanharyosembodo96@gmail.com>",
